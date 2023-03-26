@@ -43,6 +43,7 @@ import { AnimDuration, Color, Font, FontSize, SizeUnit } from "./style-helpers"
 import { startBuild } from "./trigger"
 import { ResourceName, ResourceStatus, ResourceView } from "./types"
 import { useStarredResources } from "./StarredResourcesContext"
+import { useSidebarContext } from "./SidebarContext"
 
 export type SidebarProps = {
   items: SidebarItem[]
@@ -299,6 +300,8 @@ function SidebarListSectionItems(props: SidebarSectionProps) {
     )
   }
 
+  const { isSidebarOpen } = useSidebarContext()
+
   return (
     <>
       {displayItems.map((item) => (
@@ -309,6 +312,7 @@ function SidebarListSectionItems(props: SidebarSectionProps) {
           selected={props.selected === item.name}
           pathBuilder={props.pathBuilder}
           resourceView={props.resourceView}
+          isSidebarOpen={isSidebarOpen}
         />
       ))}
       {showMoreItemsButton}

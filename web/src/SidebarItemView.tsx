@@ -11,6 +11,7 @@ import StarResourceButton, {
   StarResourceButtonRoot,
 } from "./StarResourceButton"
 import { PendingBuildDescription } from "./status"
+import Tooltip from "./Tooltip"
 import {
   AnimDuration,
   barberpole,
@@ -19,6 +20,7 @@ import {
   ColorRGBA,
   Font,
   FontSize,
+  Glow,
   mixinTruncateText,
   overviewItemBorderRadius,
   SizeUnit,
@@ -27,6 +29,7 @@ import { formatBuildDuration, isZeroTime } from "./time"
 import { timeAgoFormatter } from "./timeFormatters"
 import { startBuild } from "./trigger"
 import { ResourceStatus, ResourceView } from "./types"
+import { ClassNameFromResourceStatus } from "./ResourceStatus"
 
 export const SidebarItemRoot = styled.li`
   & + & {
@@ -122,6 +125,55 @@ const DisabledSidebarItemBox = styled.div`
   }
 `
 
+const SidebarMiniItem = styled.div`
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+  border: 3px solid ${Color.gray40};
+  transition: background-color ${AnimDuration.default} linear,
+    opacity ${AnimDuration.default} linear;
+
+  &.isWarning {
+    background-color: ${Color.yellow};
+  }
+  &.isHealthy {
+    background-color: ${Color.green};
+  }
+  &.isUnhealthy {
+    background-color: ${Color.red};
+  }
+  &.isBuilding {
+    background-color: ${ColorRGBA(Color.white, ColorAlpha.translucent)};
+  }
+  .isSelected &.isBuilding {
+    background-color: ${ColorRGBA(Color.gray30, ColorAlpha.translucent)};
+  }
+  &.isPending {
+    background-color: ${ColorRGBA(Color.white, ColorAlpha.translucent)};
+    animation: ${Glow.white} 2s linear infinite;
+  }
+  .isSelected &.isPending {
+    background-color: ${ColorRGBA(Color.gray30, ColorAlpha.translucent)};
+    animation: ${Glow.dark} 2s linear infinite;
+  }
+  &.isNone {
+    border-right: 1px solid ${Color.gray40};
+    box-sizing: border-box;
+    transition: border-color ${AnimDuration.default} linear;
+
+    svg {
+      fill: ${Color.gray50};
+    }
+  }
+  .isSelected &.isNone {
+    border-right-color: ${Color.grayLightest};
+
+    svg {
+      fill: ${Color.gray40};
+    }
+  }
+`
+
 // Flexbox (column) containing:
 // - `SidebarItemRuntimeBox` - (row) with runtime status, name, star, timeago
 // - `SidebarItemBuildBox` - (row) with build status, text
@@ -207,6 +259,7 @@ export type SidebarItemViewProps = {
   resourceView: ResourceView
   pathBuilder: PathBuilder
   groupView?: boolean
+  isSidebarOpen?: boolean
 }
 
 function buildStatusText(item: SidebarItem): string {
@@ -320,6 +373,47 @@ export function DisabledSidebarItemView(props: SidebarItemViewProps) {
   )
 }
 
+export function CollapsedSidebarItemView(props: SidebarItemViewProps) {
+  let nav = useResourceNav()
+  let item = props.item
+  let building = !isZeroTime(item.currentBuildStartTime)
+  let isSelected = props.selected
+
+  let isSelectedClass = isSelected ? "isSelected" : ""
+  let isBuildingClass = building ? "isBuilding" : ""
+  const groupViewIndentClass = props.groupView ? "groupViewIndent" : ""
+  let ref: MutableRefObject<HTMLLIElement | null> = useRef(null)
+  return (
+    <SidebarItemRoot
+      ref={ref}
+      key={item.name}
+      className={`u-showStarOnHover u-showTriggerModeOnHover ${isSelectedClass} ${isBuildingClass} ${groupViewIndentClass}`}
+    >
+      <Tooltip
+        title={
+          <>
+            <div>{item.name}</div>
+            <hr />
+            <div>{runtimeTooltipText(item.runtimeStatus)}</div>
+            <div>{buildTooltipText(item.buildStatus, item.hold)}</div>
+          </>
+        }
+        style={{ padding: 0 }}
+        enterDelay={0}
+        enterNextDelay={0}
+        placement="right"
+      >
+        <SidebarMiniItem
+          className={`${ClassNameFromResourceStatus(item.buildStatus)}`}
+          onClick={(e) => nav.openResource(item.name)}
+        >
+          &nbsp;
+        </SidebarMiniItem>
+      </Tooltip>
+    </SidebarItemRoot>
+  )
+}
+
 export function EnabledSidebarItemView(props: SidebarItemViewProps) {
   let nav = useResourceNav()
   let item = props.item
@@ -400,6 +494,9 @@ export function EnabledSidebarItemView(props: SidebarItemViewProps) {
 }
 
 export default function SidebarItemView(props: SidebarItemViewProps) {
+  if (!props.isSidebarOpen) {
+    return <CollapsedSidebarItemView {...props}></CollapsedSidebarItemView>
+  }
   const itemIsDisabled = sidebarItemIsDisabled(props.item)
   if (itemIsDisabled) {
     return <DisabledSidebarItemView {...props}></DisabledSidebarItemView>

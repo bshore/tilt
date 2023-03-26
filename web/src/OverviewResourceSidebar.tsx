@@ -92,15 +92,13 @@ export default function OverviewResourceSidebar(
           </IconButton>
         </Tooltip>
       </SidebarToggleRoot>
-      {isSidebarOpen && (
-        <SidebarResources
-          items={items}
-          selected={selected}
-          resourceView={ResourceView.OverviewDetail}
-          pathBuilder={pathBuilder}
-          resourceListOptions={options}
-        />
-      )}
+      <SidebarResources
+        items={items}
+        selected={selected}
+        resourceView={ResourceView.OverviewDetail}
+        pathBuilder={pathBuilder}
+        resourceListOptions={options}
+      />
     </OverviewResourceSidebarRoot>
   )
 }
